@@ -1,0 +1,16 @@
+ FROM alpine/git as clone
+ WORKDIR /app
+ RUN git clone https://github.com/cosminseceleanu/tutorials.git
+
+ FROM maven:3.5-jdk-8-alpine as build
+ WORKDIR /app
+ COPY --from=clone /app/tutorials/elastic-apm-java/ /app
+ RUN mvn install
+
+ FROM openjdk:8-jre-alpine
+ EXPOSE 8080
+ RUN mkdir -p /opt/app
+ WORKDIR /opt/app
+ COPY --from=build /app/target/apm-0.0.1-SNAPSHOT.jar /opt/app
+ RUN wget -O apm-agent.jar https://search.maven.org/remotecontent?filepath=co/elastic/apm/elastic-apm-agent/1.2.0/elastic-apm-agent-1.2.0.jar
+ CMD java -javaagent:/opt/app/apm-agent.jar -jar apm-0.0.1-SNAPSHOT.jar
